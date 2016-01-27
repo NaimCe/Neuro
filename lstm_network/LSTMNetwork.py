@@ -20,23 +20,21 @@ class LSTMNetwork:
         self.verbose = True
         self.lstm_layer = None
         self.lstm_layer2 = None
+        self.encode = encode
+        self.decode = decode
 
-    def populate(self, char_set, layer_sizes=None):
+    def populate(self, in_size, out_size, layer_sizes=None):
         layer_sizes = layer_sizes or self.layers_spec or []
-        chars = list(char_set)
-        if len(chars) == 0:
-            raise Exception("first argument char_set is empty!")
-        self.chars = chars
 
         self.layers = []
 
         self.lstm_layer = LSTMLayer(
-            in_size=len(self.chars),
-            out_size=len(self.chars),
+            in_size=in_size,
+            out_size=out_size,
             memory_size=layer_sizes[0])
         self.lstm_layer2 = LSTMLayer(
-            in_size=len(self.chars),
-            out_size=len(self.chars),
+            in_size=in_size,
+            out_size=out_size,
             memory_size=layer_sizes[0])
         """self.output_layer = Layer(
             in_size=self.lstm_layer.size,
@@ -73,7 +71,7 @@ class LSTMNetwork:
         for t in xrange(len(inputs)):
             # feed forward through all layers
             # get output of lstm network
-            outputs.append(self.lstm_layer.feed(inputs[t], caching_depth))
+            outputs.append(self.lstm_layer.feed(np.array([inputs[t]]).T, caching_depth))
             # get updated state from all lstm layers
 
         return outputs
@@ -88,16 +86,21 @@ class LSTMNetwork:
             pos = 0
             output_string = ""
             input_string = ""
-            for inputs, targets in zip(
-                    [inputs_list[j:j+seq_length] for j in xrange(0, len(inputs_list) - 1, seq_length)],
-                    [inputs_list[j:j+seq_length] for j in xrange(1, len(inputs_list), seq_length)]):
-                outputs = self.feedforward(inputs, seq_length)
-                loss = self.lstm_layer.learn(targets, learning_rate)
-                pos += seq_length
+            if  i % 10 == 0:
+                self.lstm_layer.visualize()
+            for sample in inputs_list:
+                for inputs, targets in zip(
+                        [sample["inputs"][j:j+seq_length] for j in xrange(0, len(sample["inputs"]) - 1, seq_length)],
+                        [sample["target"] for j in xrange(0, len(sample["inputs"]) - 1, seq_length)]):
+                    outputs = self.feedforward(inputs, seq_length)
+                    loss = self.lstm_layer.learn(targets, learning_rate)
+                    pos += seq_length
+                    #print("out: " + str([np.shape(o) for o in outputs]) + " - " + str(outputs[-1]))
 
-                output_string += decode_sequence(outputs, self.int_to_data)
-                input_string += decode_sequence(inputs, self.int_to_data)
-            loss = np.average(loss)
+                    output_string += " " + self.decode(outputs[-1])
+                    #output_string = "".join([self.decode(o) for o in outputs])
+                    input_string += " " + self.decode(targets[-1])
+                loss = np.average(loss)
 
             if not i % 10:
                 self.lstm_layer.save(os.path.join(os.getcwd(), save_dir))
@@ -109,22 +112,15 @@ class LSTMNetwork:
                     print("loss: " + str(loss) + "  "
                           + ("\\/" if loss_diff > 0 else ("--" if loss_diff == 0 else "/\\"))
                           + " " + str(loss_diff)[1:])
-                    print("in: " + input_string.replace("\n", "\\n"))
+                    print("in: " + input_string)
                     print("out: " + output_string.replace("\n", "\\n"))
                     av_loss_diff += abs(loss_diff)
                     if i == 0:
                         av_loss_diff = 0
                     if i > 0:
                         print("average lossdiff: " + str(av_loss_diff / i))
-                    if not i % 100:
-                        self.lstm_layer2.load(save_dir)
-                        free = "a"
-                        for i in range(30):
-                            free_in = encode(ord(free[-1]), self.data_to_int, len(self.chars))
-                            free += decode(self.lstm_layer2.feed(free_in), self.int_to_data)
-                        print("freestyle: " + free)
 
-                learning_rate = math.sqrt(loss) / 10
+                learning_rate = 0.01 #math.sqrt(loss) / 50
                 """if loss > 1:
                     self.roll_weights()
                     i = -1"""
@@ -135,6 +131,8 @@ class LSTMNetwork:
                     learning_rate *= 1.2
                     limit += 1"""
                 loss_diff = loss
+
+
 
     def roll_weights(self):
         self.populate(self.chars, [self.lstm_layer.size])

@@ -5,6 +5,8 @@ from neural_network.NeuralLayer import \
     BiasedNeuralLayer as BiasedLayer
 from LSTMLayerCacheList import LSTMLayerCache
 from utils import debug
+import KTimage
+
 
 class LSTMLayer(object):
     def __init__(self, in_size, out_size, memory_size):
@@ -58,6 +60,8 @@ class LSTMLayer(object):
         debug("feed(" + str(input_data) + ")")
         debug("caching_depth: " + str(len(self.caches)) + "/" + str(caching_depth))
         #print("ff input shape: " + str(np.shape(input_data)) + " - last output shape: " + str(np.shape(self.last_cache.predecessor.output_values)))
+
+        #print("in_dat: " + str(np.shape(input_data)) + "\nout_val: " + str(np.shape(self.last_cache.predecessor.output_values)))
         data = np.concatenate([input_data, self.last_cache.predecessor.output_values])
         if caching_depth <= len(self.caches):
             self.first_cache.successor.remove()
@@ -79,6 +83,8 @@ class LSTMLayer(object):
         cache.input_values = input_data
         cache.concatenated_input = data
         # update forget gate
+
+        #print(str(np.shape(self.forget_gate_layer.weights)) + " - " + str(np.shape(data)))
 
         cache.forget_gate_results = self.forget_gate_layer.feed(data)
         cache.input_gate_results = self.input_gate_layer.feed(data)
@@ -214,6 +220,13 @@ class LSTMLayer(object):
         self.update_values_layer.biases -= lr * p_updates.update_values_layer_biases
         self.output_gate_layer.biases -= lr * p_updates.output_gate_biases
         p_updates.reset()
+
+    def visualize(self):
+        KTimage.exporttiles(self.forget_gate_layer.weights, 1, self.in_size+self.size, "res/obs_F_1.pgm", self.size, 1)
+        KTimage.exporttiles(self.input_gate_layer.weights, 1, self.in_size+self.size, "res/obs_I_1.pgm", self.size, 1)
+        KTimage.exporttiles(self.update_values_layer.weights, 1, self.in_size+self.size, "res/obs_U_1.pgm", self.size, 1)
+        KTimage.exporttiles(self.output_gate_layer.weights, 1, self.in_size+self.size, "res/obs_O_1.pgm", self.size, 1)
+
 
     def save(self, directory):
         self.forget_gate_layer.save(os.path.join(directory, "forget_gate.npz"))
