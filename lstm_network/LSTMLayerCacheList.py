@@ -1,5 +1,5 @@
 import numpy as np
-
+import random
 
 class LSTMLayerCacheList(object):
     def __init__(self):
@@ -128,6 +128,7 @@ class LSTMLayerCacheList(object):
 
 class LSTMLayerCache(object):
     def __init__(self):
+        self.name = "default"
         # inputs
         self.input_values = None
         self.concatenated_input = None
@@ -148,10 +149,12 @@ class LSTMLayerCache(object):
         self.successor = None
         self.is_first_cache = False
         self.is_last_cache = False
-
+        self.final_output_values = None
         self.output_layer_results = None
 
     def insert_before(self, cache):
+        cache.name = "test_" + str(random.randint(0, 30))
+        #print("adding cache: " + cache.name)
         cache.predecessor = self.predecessor
         cache.successor = self
         self.predecessor.successor = cache
@@ -165,3 +168,18 @@ class LSTMLayerCache(object):
     def remove(self):
         self.predecessor.successor = self.successor
         self.successor.predecessor = self.predecessor
+
+    def debug(self):
+        print("Cache name: " + self.name)
+        if self.predecessor is not None:
+            print("Predecessor name: " + self.predecessor.name)
+        else:
+            print("Predecessor name: <NONE>")
+        if self.successor is not None:
+            print("Successor name: " + self.successor.name)
+        else:
+            print("Successor name: <NONE>")
+
+    def __str__(self):
+        return self.name + ("*" if self.is_first_cache else "")
+

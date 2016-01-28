@@ -33,6 +33,7 @@ class NeuralLayer(object):
 
     def load(self, path):
         np_saved = numpy.load(path)
+        #print(str(np_saved))
         self.weights = np_saved['weights']
         self.biases = np_saved['biases']
 

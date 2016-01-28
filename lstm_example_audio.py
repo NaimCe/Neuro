@@ -2,9 +2,8 @@ import numpy as np
 from lstm_network.LSTMNetwork import LSTMNetwork
 from lstm_network.utils import decode, encode
 from isa.DataStore import DataStore
-import random
-
-data_store = DataStore([
+import os
+path_tag_list = [
     ("auch", "isa/src/auch1.pnm"),
     ("auch", "isa/src/auch2.pnm"),
     ("auch", "isa/src/auch3.pnm"),
@@ -56,16 +55,17 @@ data_store = DataStore([
     ("wie", "isa/src/wie1.pnm"),
     ("yasin", "isa/src/yasin1.pnm"),
     ("yasin", "isa/src/yasin2.pnm")
-])
-
+]
+data_store = DataStore(path_tag_list, out_size=0)
 samples = data_store.get_samples()
 
-sequence_length = 5  # 'length' of memory
+sequence_length = 20  # 'length' of memory
 learning_rate = 0.1
 data_set = data_store.tag_set
 #data_set = data_set.union(set([(x + 256) for x in range(abs(memory_size - len(set(data_set))))]))
-memory_size = np.shape(samples[0]["target"])[0]
+memory_size = 600 #np.shape(samples[0]["target"])[0]
 in_size = np.shape(samples[0]["inputs"][0])[0]
+out_size = np.shape(samples[0]["target"])[0]
 
 #print("target: " + str(np.shape(samples[0]["target"])))
 #print("inputs: " + str(np.shape(samples[0]["inputs"][0])))
@@ -83,24 +83,29 @@ encoded_data = []
 
 #print(str(encoded_data[-1]))
 lstm = LSTMNetwork()
+lstm.use_output_layer = False
 
 #print(str(len(data_set)) + "\nmemsize " + str(memory_size) + "\nmaxInt")
 
-lstm.populate(in_size, in_size, layer_sizes=[memory_size])
-#lstm.load("lstm_isa_save")
+lstm.populate(in_size, out_size, layer_sizes=[memory_size, memory_size])
+lstm.load("lstm_isa_save_bk")
 
 lstm._int_to_data = data_store.tag_to_data
 lstm._data_to_int = data_store.data_to_tag
 lstm.decode = data_store.decode
 lstm.encode = data_store.encode
-lstm.train(samples, 20, iterations=20000, learning_rate=learning_rate, save_dir="lstm_isa_save")
 
-"""
-sample = DataStore.load("path")
-identifier = data_store.decode(
-  lstm.feedforward(sample)[-1])
-print(identifier)
-"""
+lstm.train(samples, seq_length=sequence_length, iterations=20000, target_loss=0.08, learning_rate=learning_rate, save_dir=os.path.join(os.getcwd(), "lstm_isa_save"))
+
 #print("result: " + str(lstm.feedforward(np.array([1]))))
 #print("result: " + str(lstm.feedforward(np.array([1]))))
 
+
+for tag, path in path_tag_list:
+    test_sample = DataStore.load(path)
+    prediction = lstm.predict(test_sample, seq_length=sequence_length)
+    print("Prediction for '" + os.path.basename(path) + "':")
+    print("Expected: " + tag)
+    print("All: " + "[ " + ', '.join([data_store.decode(p) for p in prediction]) + " ]")
+    print("Average: " + data_store.decode(np.average(prediction)))
+    print("Last: " + data_store.decode(prediction[-1]))

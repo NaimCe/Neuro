@@ -2,11 +2,12 @@ import numpy as np
 from scipy.misc import imresize as sp_imresize
 
 class DataStore(object):
-    def __init__(self, tag_path_list):
+    def __init__(self, tag_path_list, out_size=0):
         self.tag_set = None
         self.data_list = []
         self.tag_to_data = None
         self.data_to_tag = None
+        self.tag_size = out_size
 
         self.generate_data(tag_path_list)
 
@@ -31,12 +32,17 @@ class DataStore(object):
         return len(self.tag_set)
 
     def decode(self, data):
-        #print(str(np.argmax(data)) + "/" + str(len(self.tag_set)) + "\n" + str(data))
-        return self.data_to_tag[np.argmax(data)]
+        #print(str(np.argmax(data)) + "/" + str(len(self.tag_set)) + "\n" + str(np.shape(data)))
+        idx = np.argmax(data)
+        if idx >= len(self.data_to_tag):
+            #print("False: " + str(idx) + str(np.shape(data)))
+            return "False"
+        else:
+            return self.data_to_tag[np.argmax(data)]
 
     def encode(self, tag):
         tag_id = self.tag_to_data[tag]
-        encoded = np.zeros(len(self.tag_set))
+        encoded = np.zeros(max(self.tag_size, len(self.tag_set)))
         encoded[tag_id] = 1
         return encoded
 
