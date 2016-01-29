@@ -4,6 +4,7 @@ from lstm_network.LSTMNetwork import LSTMNetwork
 from DataStore import DataStore
 
 """Configuration:"""
+print(str(DataStore.load("src/hallo1.pnm")))
 
 # List of tuples of tag name and according pnm file representing audio
 path_tag_list = [
@@ -49,11 +50,11 @@ path_tag_list = [
     ("name", "src/name2.pnm"),
     ("name", "src/name3.pnm"),
     ("name", "src/name4.pnm"),
-    ("super", "src/super1.pnm"),
-    ("super", "src/super2.pnm"),
     ("super", "src/super3.pnm"),
     ("und", "src/und1.pnm"),
     ("und", "src/und2.pnm"),
+    ("super", "src/super1.pnm"),
+    ("super", "src/super2.pnm"),
     ("und", "src/und3.pnm"),
     ("wie", "src/wie1.pnm"),
     ("yasin", "src/yasin1.pnm"),
@@ -77,9 +78,9 @@ in_size = np.shape(samples[0]["inputs"][0])[0]
 # output size for lstm network (retrieved from target output data)
 out_size = np.shape(samples[0]["target"])[0]
 # maximum iterations after which training will terminate
-max_iterations = 20000
+max_iterations = 20
 # target loss: if accomplished, training will be terminated
-target_loss = 0.051
+target_loss = 0.01
 # directory to save lstm state to
 save_dir = "lstm_isa_save"
 
@@ -126,7 +127,7 @@ match_counter = 0
 for tag, path in path_tag_list:
     test_sample = DataStore.load(path)
     prediction = lstm.predict(test_sample, seq_length=sequence_length)
-    lstm.lstm_layer_in.clear_cache()
+    lstm.lstm_layer.clear_cache()
     average = data_store.decode(np.sum(prediction, axis=0))
     last = data_store.decode(prediction[-1])
     combo = data_store.decode(np.sum(prediction[-5:], axis=0))

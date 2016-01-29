@@ -21,7 +21,8 @@ class DataStore(object):
     @classmethod
     def load(self, path_to_pnm):
         width, height, img_str = DataStore.read_pnm(path_to_pnm)
-        img_data = np.array([int(num) for num in filter(None, img_str.split(" "))]).reshape((height, width))
+        img_data = np.array([int(num) for num in filter(None, img_str.split(" "))])
+        img_data = img_data.reshape((height, width)).astype(np.float64)
         img_data /= np.max(img_data)
 
         return sp_imresize(img_data, (width / 4, 30))
